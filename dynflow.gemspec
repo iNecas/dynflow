@@ -1,4 +1,12 @@
 # -*- encoding: utf-8 -*-
+
+raise <<MESSAGE
+This is not the repository you are looking for. The Dynflow repository was
+moved. Please update your Gemfile:
+
+gem 'dynflow',       :git => 'https://github.com/Dynflow/dynflow.git'
+MESSAGE
+
 $:.push File.expand_path("../lib", __FILE__)
 require "dynflow/version"
 
