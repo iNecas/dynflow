@@ -269,10 +269,14 @@ module Dynflow
       persistence.save_execution_plan(self)
     end
 
-    def self.new_from_hash(hash, world)
+    def self.new_from_hash(hash, world, check_steps = true)
       check_class_matching hash
       execution_plan_id = hash[:id]
-      steps             = steps_from_hash(hash[:step_ids], execution_plan_id, world)
+      steps             = steps_from_hash(hash[:step_ids],
+                                          execution_plan_id,
+                                          world,
+                                          steps = check_steps ? [] : hash[:steps],
+                                          from_persistence = check_steps)
       self.new(world,
                execution_plan_id,
                hash[:state],
@@ -335,9 +339,14 @@ module Dynflow
       end
     end
 
-    def self.steps_from_hash(step_ids, execution_plan_id, world)
+    def self.steps_from_hash(step_ids, execution_plan_id, world, steps = [], from_persistence = true)
       step_ids.inject({}) do |hash, step_id|
-        step = world.persistence.load_step(execution_plan_id, step_id, world)
+        if from_persistence
+          step = world.persistence.load_step(execution_plan_id, step_id, world)
+        else
+          step_hash = steps.select{|s| s[:id] == step_id}.first
+          step = Dynflow::Serializable.from_hash(step_hash, execution_plan_id, world)
+        end
         hash.update(step_id.to_i => step)
       end
     end

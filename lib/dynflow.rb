@@ -39,4 +39,7 @@ module Dynflow
   require 'dynflow/dispatcher'
   require 'dynflow/daemon'
   require 'dynflow/config'
+  require 'dynflow/exporter'
+  require 'dynflow/importer'
+
 end
