@@ -47,9 +47,9 @@ module Dynflow
         end
 
         it 'plan.json contents equals json generated from execution plan' do
-          expectedJSON = File.read("#{path}/#{execution_plan.id}/plan.json")
-          generatedJSON = MultiJson.dump(@exporter.export_execution_plan(execution_plan.id))
-          expectedJSON.must_equal generatedJSON
+          expected_json = File.read("#{path}/#{execution_plan.id}/plan.json")
+          generated_json = MultiJson.dump(@exporter.export_execution_plan(execution_plan.id))
+          expected_json.must_equal generated_json
         end
 
         after do
@@ -71,9 +71,9 @@ module Dynflow
         end
 
         it 'makes action-#{ref_action.id}.json contents equal json generated from ref action' do
-          expectedJSON = File.read("#{path}/#{execution_plan.id}/action-#{ref_action.id}.json")
-          generatedJSON = MultiJson.dump(@exporter.export_action(execution_plan.id, ref_action.id))
-          expectedJSON.must_equal generatedJSON
+          expected_json = File.read("#{path}/#{execution_plan.id}/action-#{ref_action.id}.json")
+          generated_json = MultiJson.dump(@exporter.export_action(execution_plan.id, ref_action.id))
+          expected_json.must_equal generated_json
         end
 
         after do
@@ -99,8 +99,8 @@ module Dynflow
         end
 
         it 'should not fail' do
-          actionJSON = File.read("#{path}/#{execution_plan.id}/action-1.json")
-          File.write("#{path}/#{execution_plan.id}/action-42.json", actionJSON)
+          action_json = File.read("#{path}/#{execution_plan.id}/action-1.json")
+          File.write("#{path}/#{execution_plan.id}/action-42.json", action_json)
           @importer.import_from_dir("#{path}/#{execution_plan.id}").must_be_instance_of Hash
         end
 

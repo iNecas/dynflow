@@ -19,14 +19,14 @@ module Dynflow
 
     private
 
-    def all_action_files_present?(execution_plan,path)
+    def all_action_files_present?(execution_plan, path)
       action_ids = []
       each_action_file(path) { |file| action_ids << /action-(\d+).json$/.match(file)[1].to_i }
       (execution_plan.steps.map { |_, step| step.action_id } - action_ids).count == 0
     end
 
-    def each_action_file(path)
-      Dir.glob("#{path}/action-*.json") { |action_file| yield action_file if block_given? }
+    def each_action_file(path, &block)
+      Dir.glob("#{path}/action-*.json", &block)
     end
   end
 

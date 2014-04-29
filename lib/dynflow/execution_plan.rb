@@ -344,7 +344,7 @@ module Dynflow
         if from_persistence
           step = world.persistence.load_step(execution_plan_id, step_id, world)
         else
-          step_hash = steps.select{ |s| s[:id] == step_id }.first
+          step_hash = steps.select { |s| s[:id] == step_id }.first
           step = Dynflow::ExecutionPlan::Steps::Abstract.from_hash(step_hash, execution_plan_id, world)
         end
         hash.update(step_id.to_i => step)
