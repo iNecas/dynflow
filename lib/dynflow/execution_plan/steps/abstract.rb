@@ -79,7 +79,7 @@ module Dynflow
                           id:                id,
                           state:             state,
                           class:             self.class.to_s,
-                          action_class:      action_class.to_s,
+                          action_class:      action_class.name,
                           action_id:         action_id,
                           error:             error,
                           started_at:        time_to_str(started_at),
