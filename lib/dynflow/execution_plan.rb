@@ -275,8 +275,7 @@ module Dynflow
       steps             = steps_from_hash(hash[:step_ids],
                                           execution_plan_id,
                                           world,
-                                          from_persistence ? [] : hash[:steps],
-                                          from_persistence)
+                                          from_persistence ? nil : hash[:steps])
       self.new(world,
                execution_plan_id,
                hash[:state],
@@ -339,9 +338,9 @@ module Dynflow
       end
     end
 
-    def self.steps_from_hash(step_ids, execution_plan_id, world, steps = [], from_persistence = true)
+    def self.steps_from_hash(step_ids, execution_plan_id, world, steps = nil)
       step_ids.inject({}) do |hash, step_id|
-        if from_persistence
+        if steps.nil?
           step = world.persistence.load_step(execution_plan_id, step_id, world)
         else
           step_hash = steps.select { |s| s[:id] == step_id }.first

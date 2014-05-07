@@ -109,6 +109,7 @@ module Dynflow
           dest_execution_plan.id.must_equal execution_plan.id
 
           assert_steps_equal execution_plan.root_plan_step, dest_execution_plan.root_plan_step
+          execution_plan.root_plan_step.action_class.must_equal dest_execution_plan.root_plan_step.action_class
           assert_equal execution_plan.steps.keys, dest_execution_plan.steps.keys
 
           dest_execution_plan.steps.each do |id, step|

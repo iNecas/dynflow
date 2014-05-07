@@ -30,7 +30,7 @@ module Dynflow
     end
   end
 
-  class ActionMissing < StandardError
+  class ActionMissing < Dynflow::Error
   end
 
 end
