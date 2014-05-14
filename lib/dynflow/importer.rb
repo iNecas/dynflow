@@ -6,6 +6,7 @@ module Dynflow
     end
 
     def import_from_dir(path)
+      File.exists?("#{path}/plan.json") || return
       execution_plan_hash = MultiJson.load(File.read("#{path}/plan.json"), :symbolize_keys => true)
       execution_plan = Dynflow::ExecutionPlan.new_from_hash(execution_plan_hash, @world, false)
       raise ActionMissing, "Action files are missing" unless all_action_files_present?(execution_plan, path)
