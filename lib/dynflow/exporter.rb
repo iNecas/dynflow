@@ -2,8 +2,6 @@ require 'fileutils'
 module Dynflow
   class Exporter
 
-    attr_reader :actions, :execution_plan
-
     def initialize(world)
       @world = world
     end
