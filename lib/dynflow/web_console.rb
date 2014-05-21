@@ -254,6 +254,26 @@ module Dynflow
       erb :index
     end
 
+    get('/api/:id.json') do |id|
+      begin
+        exporter = Dynflow::Exporter.new(world)
+        MultiJson.dump(exporter.export_execution_plan(id))
+      rescue
+        status 404
+        body "Execution plan with id '#{id}' not found."
+      end
+    end
+
+    get('/api/:id/:action_id.json') do |id, action_id|
+      begin
+        exporter = Dynflow::Exporter.new(world)
+        MultiJson.dump(exporter.export_action(id, action_id))
+      rescue
+        status 404
+        body "Action with ID '#{action_id}' was not found in plan '#{id}'."
+      end
+    end
+
     get('/:id') do |id|
       @plan = world.persistence.load_execution_plan(id)
       @notice = params[:notice]
