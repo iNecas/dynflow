@@ -254,6 +254,16 @@ module Dynflow
       erb :index
     end
 
+    get('/api/all_ids.json') do
+      plans = world.persistence.adapter.find_execution_plans({}).map { |plan| plan['id'] }
+      MultiJson.dump(plans)
+    end
+
+    get('/api/paused_ids.json') do
+      plans = world.persistence.adapter.find_execution_plans(filters: {'state' => 'paused'}).map { |plan| plan['id'] }
+      MultiJson.dump(plans)
+    end
+
     get('/api/:id.json') do |id|
       begin
         exporter = Dynflow::Exporter.new(world)
