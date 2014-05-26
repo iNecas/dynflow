@@ -2,6 +2,9 @@ require 'dynflow'
 require 'pp'
 require 'sinatra'
 require 'yaml'
+require 'tmpdir'
+require 'zlib'
+require 'archive/tar/minitar'
 
 module Dynflow
   class WebConsole < Sinatra::Base
@@ -253,18 +256,25 @@ module Dynflow
       @plans = world.persistence.find_execution_plans(options)
       erb :index
     end
+    
+    post('/api/execution_plans/import') do
+      Dir.mktmpdir do |tmp|
+        Dir.chdir(tmp) do
+          tgz = Zlib::GzipReader.new(File.open(params['upload'][:tempfile], 'rb'))
+          Archive::Tar::Minitar.unpack(tgz, '.')
+          importer = Dynflow::Importer.new(world)
+          importer.import_from_dir(params['upload'][:filename].gsub(/\.tar\.gz$/,''))
+        end
+      end
+      status 200
+    end
 
-    get('/api/all_ids.json') do
-      plans = world.persistence.adapter.find_execution_plans({}).map { |plan| plan['id'] }
+    post('/api/execution_plans') do
+      plans = world.persistence.find_execution_plans(params).map { |plan| plan.id }
       MultiJson.dump(plans)
     end
 
-    get('/api/paused_ids.json') do
-      plans = world.persistence.adapter.find_execution_plans(filters: {'state' => 'paused'}).map { |plan| plan['id'] }
-      MultiJson.dump(plans)
-    end
-
-    get('/api/:id.json') do |id|
+    get('/api/execution_plans/:id') do |id|
       begin
         exporter = Dynflow::Exporter.new(world)
         MultiJson.dump(exporter.export_execution_plan(id))
@@ -274,7 +284,7 @@ module Dynflow
       end
     end
 
-    get('/api/:id/:action_id.json') do |id, action_id|
+    get('/api/execution_plans/:id/actions/:action_id') do |id, action_id|
       begin
         exporter = Dynflow::Exporter.new(world)
         MultiJson.dump(exporter.export_action(id, action_id))
