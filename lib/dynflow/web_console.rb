@@ -257,7 +257,7 @@ module Dynflow
       erb :index
     end
     
-    post('/api/execution_plans/import') do
+    post('/api/execution_plans/add') do
       Dir.mktmpdir do |tmp|
         Dir.chdir(tmp) do
           tgz = Zlib::GzipReader.new(File.open(params['upload'][:tempfile], 'rb'))
