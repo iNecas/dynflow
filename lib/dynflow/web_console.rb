@@ -263,10 +263,14 @@ module Dynflow
           tgz = Zlib::GzipReader.new(File.open(params['upload'][:tempfile], 'rb'))
           Archive::Tar::Minitar.unpack(tgz, '.')
           importer = Dynflow::Importer.new(world)
-          importer.import_from_dir(params['upload'][:filename].gsub(/\.tar\.gz$/,''))
+          begin
+            importer.import_from_dir(params['upload'][:filename].gsub(/\.tar\.gz$/,''))
+          rescue Exception => e
+            status 406
+            body "Action files are missing"
+          end
         end
       end
-      status 200
     end
 
     post('/api/execution_plans') do
