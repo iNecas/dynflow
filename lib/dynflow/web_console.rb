@@ -265,7 +265,7 @@ module Dynflow
           importer = Dynflow::Importer.new(world)
           begin
             importer.import_from_dir(params['upload'][:filename].gsub(/\.tar\.gz$/,''))
-						status 200
+            status 200
           rescue Exception => e
             status 406
             body "Action files are missing"
