@@ -1,3 +1,7 @@
+//= require jquery
+//= require bootstrap
+//= require prettify
+
 (function ($) {
   $.fn.extend({
     postlink: function (options) {

@@ -1,3 +1,7 @@
+/*
+ *= require bootstrap
+ *= require prettify
+ */
 body {
   margin: 1em;
 }

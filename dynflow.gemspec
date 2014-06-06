@@ -23,6 +23,8 @@ Gem::Specification.new do |s|
   s.add_dependency "uuidtools"
   s.add_dependency "concurrent-ruby", '~> 0.7.0'
   s.add_dependency "minitar"
+  s.add_dependency "sprockets"
+  s.add_dependency "sprockets-helpers"
 
   s.add_development_dependency "rack-test"
   s.add_development_dependency "minitest"

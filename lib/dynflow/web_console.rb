@@ -5,6 +5,8 @@ require 'yaml'
 require 'tmpdir'
 require 'zlib'
 require 'archive/tar/minitar'
+require 'sprockets'
+require 'sprockets-helpers'
 
 module Dynflow
   class WebConsole < Sinatra::Base
@@ -22,8 +24,10 @@ module Dynflow
     set :per_page, 10
 
     helpers ERB::Util
+    helpers Sprockets::Helpers
 
     helpers do
+
       def world
         settings.world
       end
@@ -247,6 +251,29 @@ module Dynflow
 
     end
 
+    set :sprockets, Sprockets::Environment.new
+
+    configure do
+      self.sprockets.append_path(File.join(web_dir, 'assets/javascripts'))
+      self.sprockets.append_path(File.join(web_dir, 'assets/stylesheets'))
+      Dir.glob(File.join(web_dir, 'assets/vendor/*')) do |path|
+        self.sprockets.append_path(path)
+      end
+
+      Sprockets::Helpers.configure do |config|
+        config.environment = sprockets
+        config.debug = true if development?
+        #config.protocol = app.assets_protocol
+        #config.asset_host = app.assets_host unless app.assets_host.nil?
+      end
+    end
+
+    get "/assets/*" do |path|
+      env_sprockets = request.env.dup
+      env_sprockets['PATH_INFO'] = path
+      settings.sprockets.call env_sprockets
+    end
+
     get('/') do
       options = HashWithIndifferentAccess.new
       options.merge!(filtering_options)
@@ -256,6 +283,7 @@ module Dynflow
       @plans = world.persistence.find_execution_plans(options)
       erb :index
     end
+<<<<<<< variant A
     
     post('/api/execution_plans/add') do
       Dir.mktmpdir do |tmp|
@@ -299,6 +327,11 @@ module Dynflow
       end
     end
 
+>>>>>>> variant B
+    
+####### Ancestor
+
+======= end
     get('/:id') do |id|
       @plan = world.persistence.load_execution_plan(id)
       @notice = params[:notice]
