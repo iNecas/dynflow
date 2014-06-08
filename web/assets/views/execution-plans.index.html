@@ -1,0 +1,21 @@
+<h1>Execution Plans</h1>
+<table class="table">
+  <thead>
+    <tr>
+      <th>Uuid</th>
+      <th>State</th>
+      <th>Result</th>
+    </tr>
+  <thead>
+    <tbody>
+      <tr ng-repeat="executionPlan in executionPlans">
+        <td>
+          <a ui-sref="execution-plans.details({ executionPlanId: executionPlan.id})">
+            {{ executionPlan.id }}
+          </a>
+        </td>
+        <td>{{ executionPlan.state }}</td>
+        <td>{{ executionPlan.result }}</td>
+      </tr>
+    <tbody>
+</table>

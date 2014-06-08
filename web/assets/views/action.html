@@ -1,0 +1,27 @@
+<div>
+  <div class="list-group-item dynflow-action-line">
+    <a id="dynflow-action-link/{{executionPlan.id}}/{{action.id}}" ui-sref="execution-plans.details.action({ executionPlanId: executionPlan.id, actionId: action.id })">
+      {{ action.id }}: {{ action.class }}
+    </a>
+    <span class="dynflow-action-phases">
+      <span dynflow-step="action.planStep"></span>
+      <span dynflow-step="action.runStep"></span>
+      <span dynflow-step="action.finalizeStep"></span>
+    </span>
+  </div>
+  <ul class="dynflow-action-children">
+    <li>
+      <div ng-show="action.showDetails" class="list-group-item">
+        <i ng-show="! action.loaded" class="icon-spinner icon-spin"></i>
+        <div ng-show="action.loaded">
+          <a ui-sref="execution-plans.details({ executionPlanId: executionPlan.id })" class="close-icon glyphicon glyphicon-remove"></a>
+          <pre>{{ action.input | json }}</pre>
+          <pre>{{ action.output | json }}</pre>
+        </div>
+      </div>
+    </li>
+    <li class="dynflow-action-child" ng-repeat="action in action.children">
+      <div ng-include="'views/action.html'"></div>
+    </li>
+  </ul>
+</div>

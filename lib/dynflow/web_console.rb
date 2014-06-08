@@ -263,6 +263,7 @@ module Dynflow
       Sprockets::Helpers.configure do |config|
         config.environment = sprockets
         config.debug = true if development?
+        config.prefix = 'assets'
         #config.protocol = app.assets_protocol
         #config.asset_host = app.assets_host unless app.assets_host.nil?
       end
@@ -272,6 +273,10 @@ module Dynflow
       env_sprockets = request.env.dup
       env_sprockets['PATH_INFO'] = path
       settings.sprockets.call env_sprockets
+    end
+
+    get '/console/?*' do |path|
+      erb :console, :layout => false
     end
 
     get('/') do
@@ -304,6 +309,26 @@ module Dynflow
     post('/api/execution_plans') do
       plans = world.persistence.find_execution_plans(params).map { |plan| plan.id }
       MultiJson.dump(plans)
+    end
+
+    get('/api/execution_plans') do
+      # TODO: this is just quick hack to get us the API quickly
+      begin
+        options = HashWithIndifferentAccess.new
+        options.merge!(filtering_options)
+        options.merge!(pagination_options)
+        options.merge!(ordering_options)
+
+        execution_plans = world.persistence.find_execution_plans(options)
+
+        exporter = Dynflow::Exporter.new(world)
+        MultiJson.dump(execution_plans.map do |execution_plan|
+                         exporter.export_execution_plan(execution_plan.id)
+                       end)
+      rescue
+        status 404
+        body "Execution plan with id '#{id}' not found."
+      end
     end
 
     get('/api/execution_plans/:id') do |id|

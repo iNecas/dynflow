@@ -10,6 +10,7 @@ module Dynflow
       execution_plan = @world.persistence.load_execution_plan(execution_plan_id)
       execution_plan_hash = execution_plan.to_hash
       execution_plan_hash.tap do |eph|
+        eph[:progress] = execution_plan.progress
         eph[:steps] = execution_plan.steps.map { |_, step| step.to_hash }
       end
     end

@@ -1,0 +1,40 @@
+/*
+ *= require bootstrap
+ *= require css/font-awesome
+ */
+
+ul.dynflow-action-children {
+    list-style-type: none;
+}
+
+span.dynflow-action-phases {
+    position: absolute;
+    right: 1em;
+}
+
+span.label-blink {
+  animation: blink 2s steps(40, start) infinite;
+  -webkit-animation: blink 2s steps(40, start) infinite;
+}
+
+a.close-icon {
+    color: #999999;
+    float: right;
+    text-decoration: none;
+}
+
+@keyframes blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+@-webkit-keyframes blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+i.icon-spinner {
+    background: white;
+    font-size: 3em;
+}

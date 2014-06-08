@@ -11,8 +11,9 @@
     "angular-ui-router": "~0.2.10",
     "angular-blocks": "~>0.1.8",
     "underscore": "~1.5.2",
-    "bootstrap": "~3.0.1",
+    "bootstrap": "~3.1.1",
     "angular-animate": "~1.2.0",
+    "font-awesome": "~3.2.1",
     "google-code-prettify": ""
   },
   "devDependencies": {},
@@ -22,6 +23,13 @@
     },
     "google-code-prettify": {
         "": "./src/prettify.*"
+    },
+    "angular-bootstrap": {
+        "": "ui-bootstrap*.js"
+    },
+    "font-awesome": {
+        "css": "css/*.css",
+        "font": "font/*.{woff,ttf}"
     }
   }
 }

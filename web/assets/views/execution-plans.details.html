@@ -1,0 +1,17 @@
+<h1>Execution Plan</h1>
+<dl class="dl-horizontal">
+  <div class="row">
+    <div class="col-xs-11">
+      <progressbar ng-class="progressCssClasses" type="{{ progressType }}" value="executionPlan.progress * 100" max="100"></progressbar>
+    </div>
+    <div class="col-xs-1">{{ executionPlan.progress * 100 }}%</div>
+  </div>
+  <dt>Uuid:</dt>
+  <dd>{{ executionPlan.id }}</dd>
+  <dt>Result:</dt>
+  <dd>{{ executionPlan.result }}</dd>
+  <dt>State:</dt>
+  <dd>{{ executionPlan.state }}</dd>
+</dl>
+<div class="list-group" ng-include="'views/action.html'"></div>
+<div ui-view></div>
