@@ -22,6 +22,23 @@ DESC
 
 require_relative 'example_helper'
 
+class RetryMiddleware < Dynflow::Middleware
+
+  MAX_RETRIES = 3 # if 0, it will fail right away
+
+  def run(*args)
+    pass
+  rescue => e
+    action.output[:retries] ||= 0
+    action.output[:retries] += 1
+    if action.output[:retries] < MAX_RETRIES
+      retry
+    else
+      raise e
+    end
+  end
+end
+
 module Orchestrate
 
 
@@ -65,6 +82,9 @@ module Orchestrate
   end
 
   class Base < Dynflow::Action
+
+    middleware.use RetryMiddleware
+
     def sleep!
       sleep(rand(2))
     end
