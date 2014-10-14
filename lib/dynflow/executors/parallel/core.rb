@@ -82,9 +82,12 @@ module Dynflow
           else
             feed_pool next_work
           end
+        ensure
+          try_to_terminate(manager)
         end
 
         def rescue?(manager)
+          return false if terminating?
           @world.auto_rescue && manager.execution_plan.state == :paused &&
               !@plan_ids_in_rescue.include?(manager.execution_plan.id)
         end
@@ -102,6 +105,7 @@ module Dynflow
         end
 
         def feed_pool(work_items)
+          return if terminating?
           Type! work_items, Array, Work, NilClass
           return if work_items.nil?
           work_items = [work_items] if work_items.is_a? Work
@@ -118,10 +122,15 @@ module Dynflow
           end
         end
 
+        def terminate_manager!(manager)
+          return unless @execution_plan_managers.delete(manager.execution_plan.id)
+          manager.terminate
+          set_future(manager)
+        end
+
         def set_future(manager)
           @plan_ids_in_rescue.delete(manager.execution_plan.id)
           manager.future.resolve manager.execution_plan
-          try_to_terminate
         end
 
 
@@ -139,8 +148,10 @@ module Dynflow
           end
         end
 
-        def try_to_terminate
-          if terminating? && @execution_plan_managers.empty?
+        def try_to_terminate(manager = nil)
+          return unless terminating?
+          terminate_manager!(manager) if manager
+          if @execution_plan_managers.empty?
             @pool.ask(Terminate).wait
             logger.info '... Core terminated.'
             terminate!
