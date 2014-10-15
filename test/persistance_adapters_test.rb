@@ -150,8 +150,7 @@ module Dynflow
       executor_envelope = Dispatcher::Envelope[123, client_world.id, executor_world.id, Dispatcher::Execution['111']]
       client_envelope   = Dispatcher::Envelope[123, executor_world.id, client_world.id, Dispatcher::Accepted]
       envelopes         = [client_envelope, executor_envelope]
-
-      envelopes.each { |e| persistence.push_envelope(e) }
+      envelopes.each { |e| adapter.push_envelope(e) }
 
       assert_equal [executor_envelope], persistence.pull_envelopes(executor_world.id)
       assert_equal [client_envelope],   persistence.pull_envelopes(client_world.id)
@@ -160,6 +159,46 @@ module Dynflow
 
       envelopes.each { |e| persistence.push_envelope(e) }
       [executor_world, client_world].each { |w| persistence.delete_world(w) }
+    end
+
+    def test_listen_notify_envelopes
+      # allow running against postgres database
+      adapter = WorldInstance.persistence_adapter
+      skip unless adapter.notify_support
+      client_world       = Persistence::RegisteredWorld['5678', false]
+      executor_world     = Persistence::RegisteredWorld['1234', true]
+      [executor_world, client_world].each { |w| adapter.save_world(w.id, w.to_hash) }
+      executor_envelope  = Dispatcher::Envelope[123, client_world.id, executor_world.id, Dispatcher::Execution['111']]
+      executor_envelope2 = Dispatcher::Envelope[456, client_world.id, executor_world.id, Dispatcher::Execution['222']]
+      client_envelope    = Dispatcher::Envelope[123, executor_world.id, client_world.id, Dispatcher::Accepted]
+      envelopes          = [client_envelope, executor_envelope, executor_envelope2]
+      notifications      = []
+      stop_listening     = false
+      listen = Thread.new do
+        adapter.listen_envelope(executor_world.id) do |envelope|
+          if stop_listening
+            break
+          else
+            notifications << envelope
+          end
+        end
+      end
+      sleep 0.2
+      envelopes.each { |e| adapter.push_envelope(e) }
+      sleep 0.2
+      case adapter.notify_support
+      when :notify_with_payload
+        assert_equal [executor_envelope, executor_envelope2], notifications
+        assert_equal [], adapter.pull_envelopes(executor_world.id)
+      when :notify_without_payload
+        assert_equal [nil], notifications
+        assert_equal [executor_envelope, executor_envelope2], adapter.pull_envelopes(executor_world.id)
+      end
+      stop_listening = true
+      adapter.notify_envelope(executor_world.id)
+      listen.join
+    ensure
+      [executor_world, client_world].each { |w| adapter.delete_world(w.id) }
     end
   end
 

@@ -140,7 +140,49 @@ module Dynflow
       end
 
       def push_envelope(envelope)
-        save :envelope, {}, envelope
+        table           = table(:envelope)
+        data = dump_data(envelope)
+        # Postgres limit on paylod size is 8000 bytes
+        if notify_support == :notify_with_payload && data.size < 8000
+          notify_envelope(envelope.receiver_id, data)
+        else
+          table.insert :receiver_id => envelope.receiver_id, :data => data
+          if notify_support == :notify_without_payload
+            notify_envelope(envelope.receiver_id)
+          end
+        end
+      end
+
+      def notify_support
+        return @notify_support if defined? @notify_support
+        @notify_support = if @db.class.name == "Sequel::Postgres::Database"
+                            # Postgres is able to send a payload since v 9.0
+                            if @db.fetch('SELECT version()').first[:version] =~ /PostgreSQL 8/
+                              :notify_without_payload
+                            else
+                              :notify_with_payload
+                            end
+                          else
+                            false
+                          end
+      end
+
+      def notify_envelope(world_id, data = nil)
+        options = {}
+        if data
+          options[:payload] = data
+        end
+        @db.notify("world:#{world_id}", options)
+      end
+
+      def listen_envelope(world_id)
+        @db.listen("world:#{ world_id }", :loop => true) do |_, _, data|
+          if data
+            yield Serializable::AlgebrickSerializer.instance.load(data, Dispatcher::Envelope)
+          else
+            yield
+          end
+        end
       end
 
       def to_hash

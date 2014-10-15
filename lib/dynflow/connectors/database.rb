@@ -13,15 +13,15 @@ module Dynflow
       CheckInbox = Algebrick.atom
 
       class PostgresListerner
-        def initialize(core, world_id, db)
-          @core     = core
-          @db       = db
-          @world_id = world_id
-          @started  = false
+        def initialize(core, world_id, db_adapter)
+          @core       = core
+          @db_adapter = db_adapter
+          @world_id   = world_id
+          @started    = false
         end
 
         def enabled?
-          @db.class.name == "Sequel::Postgres::Database"
+          @db_adapter.notify_support
         end
 
         def started?
@@ -30,9 +30,13 @@ module Dynflow
 
         def start
           @thread = Thread.new do
-            @db.listen("world:#{ @world_id }") do
+            @db_adapter.listen_envelope(@world_id) do |envelope|
               if @started
-                @core << CheckInbox
+                if envelope
+                  @core << envelope
+                else
+                  @core << CheckInbox
+                end
               else
                 break # the listener is stopped: don't continue listening
               end
@@ -42,7 +46,7 @@ module Dynflow
         end
 
         def notify(world_id)
-          @db.notify("world:#{world_id}")
+          @db_adapter.notify_envelope(world_id)
         end
 
         def stop
@@ -71,7 +75,7 @@ module Dynflow
                 (on StartListening.(~Dynflow::World.to_m) do |world|
                    @world = world
                    @stopped = false
-                   @postgres_listener ||= PostgresListerner.new(self, @world.id, @world.persistence.adapter.db)
+                   @postgres_listener ||= PostgresListerner.new(self, @world.id, @world.persistence.adapter)
                    postgres_listen_start
                    self << CheckInbox
                  end),
@@ -121,9 +125,6 @@ module Dynflow
 
         def send_envelope(envelope)
           @world.persistence.push_envelope(envelope)
-          if @postgres_listener.enabled?
-            @postgres_listener.notify(envelope.receiver_id)
-          end
         end
 
         def update_receiver_id(envelope, new_receiver_id)

@@ -17,6 +17,10 @@ module Dynflow
         []
       end
 
+      def notify_support
+        false
+      end
+
       # @option options [Integer] page index of the page (starting at 0)
       # @option options [Integer] per_page the number of the items on page
       # @option options [Symbol] order_by name of the column to use for ordering
