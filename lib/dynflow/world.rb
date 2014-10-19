@@ -236,7 +236,6 @@ module Dynflow
       end
     end
 
-    # should be called after World is initialized, SimpleWorld does it automatically
     def execute_planned_execution_plans
       planned_execution_plans =
           self.persistence.find_execution_plans filters: { 'state' => %w(planned) }

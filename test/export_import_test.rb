@@ -4,8 +4,8 @@ module Dynflow
   module ExportImportTest
     describe 'export-import' do
 
-      before do 
-        @world = Dynflow::SimpleWorld.new
+      before do
+        @world = WorldInstance.create_world
         @exporter = Dynflow::Exporter.new @world
       end
 
@@ -42,8 +42,8 @@ module Dynflow
           execution_plan_hash[:state].must_equal exported_plan[:state]
           execution_plan_hash[:started_at].must_equal exported_plan[:started_at]
           execution_plan_hash[:ended_at].must_equal exported_plan[:ended_at]
-          execution_plan_hash[:execution_time].must_equal exported_plan[:execution_time]
-          execution_plan_hash[:real_time].must_equal exported_plan[:real_time]
+          execution_plan_hash[:execution_time].to_f.must_equal exported_plan[:execution_time].to_f
+          execution_plan_hash[:real_time].to_f.must_equal exported_plan[:real_time].to_f
         end
 
         it 'plan.json contents equals json generated from execution plan' do
@@ -88,7 +88,7 @@ module Dynflow
         before do
           execution_plan.save
           @exporter.export_to_dir(execution_plan.id, path)
-          @dest_world = Dynflow::SimpleWorld.new
+          @dest_world = WorldInstance.create_world
           @importer = Dynflow::Importer.new @dest_world
           @importer.import_from_dir("#{path}/#{execution_plan.id}/")
         end
