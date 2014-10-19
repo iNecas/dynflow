@@ -283,8 +283,7 @@ module Dynflow
       @plans = world.persistence.find_execution_plans(options)
       erb :index
     end
-<<<<<<< variant A
-    
+
     post('/api/execution_plans/add') do
       Dir.mktmpdir do |tmp|
         Dir.chdir(tmp) do
@@ -327,11 +326,6 @@ module Dynflow
       end
     end
 
->>>>>>> variant B
-    
-####### Ancestor
-
-======= end
     get('/:id') do |id|
       @plan = world.persistence.load_execution_plan(id)
       @notice = params[:notice]
