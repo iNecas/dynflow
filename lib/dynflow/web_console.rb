@@ -331,6 +331,10 @@ module Dynflow
       end
     end
 
+    get('/api/worlds') do
+      MultiJson.dump(world.persistence.find_worlds({}).map(&:to_hash))
+    end
+
     get('/api/execution_plans/:id') do |id|
       begin
         exporter = Dynflow::Exporter.new(world)

@@ -165,6 +165,10 @@ angular.module('dynflowConsole')
             }
         }
     }])
+    .factory('World', ['$resource', function ($resource) {
+        var resource = $resource('./api/worlds', {});
+        return resource;
+    }])
     .directive('dynflowStep', [function () {
         return {
             restrict: 'A',
@@ -261,6 +265,9 @@ angular.module('dynflowConsole')
                      });
 
     }])
+    .controller('WorldsIndexController', ['$scope', 'World', function($scope, World) {
+        $scope.worlds = World.query();
+    }])
     .config(function ($stateProvider, $urlRouterProvider) {
         //
         // For any unmatched url, redirect to /state1
@@ -285,5 +292,14 @@ angular.module('dynflowConsole')
             .state('execution-plans.details.action', {
                 url: "/actions/:actionId",
                 controller: "ExecutionPlansDetailsActionController"
+            })
+            .state('worlds', {
+                abstract: true,
+                template: '<ui-view/>'
+            })
+            .state('worlds.index', {
+                url: "/worlds",
+                templateUrl: "views/worlds.index.html",
+                controller: "WorldsIndexController"
             })
     });

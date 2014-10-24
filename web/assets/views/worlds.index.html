@@ -1,0 +1,17 @@
+<h1>Worlds</h1>
+<table class="table">
+  <thead>
+    <tr>
+      <th>Uuid</th>
+      <th>Executor</th>
+    </tr>
+  <thead>
+    <tbody>
+      <tr ng-repeat="world in worlds">
+        <td>
+          {{ world.id }}
+        </td>
+        <td>{{ world.executor }}</td>
+      </tr>
+    <tbody>
+</table>
