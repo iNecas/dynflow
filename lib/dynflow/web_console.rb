@@ -254,8 +254,8 @@ module Dynflow
     set :sprockets, Sprockets::Environment.new
 
     configure do
-      self.sprockets.append_path(File.join(web_dir, 'assets/javascripts'))
-      self.sprockets.append_path(File.join(web_dir, 'assets/stylesheets'))
+      self.sprockets.append_path(File.join(web_dir, 'assets/js'))
+      self.sprockets.append_path(File.join(web_dir, 'assets/css'))
       Dir.glob(File.join(web_dir, 'assets/vendor/*')) do |path|
         self.sprockets.append_path(path)
       end
