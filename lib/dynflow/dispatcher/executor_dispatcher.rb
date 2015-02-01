@@ -23,16 +23,16 @@ module Dynflow
       end
 
       def perform_execution(envelope, execution)
-        future = Concurrent::IVar.new.with_observer do |_, execution_plan, reason|
-          allocation = Persistence::ExecutorAllocation[@world.id, execution_plan.id]
+        future = Concurrent::IVar.new.with_observer do |_, _, reason|
+          allocation = Persistence::ExecutorAllocation[@world.id, execution.execution_plan_id]
           @world.persistence.delete_executor_allocation(allocation)
           if reason
             respond(envelope, Failed[reason.message])
-          elsif execution_plan.state == :paused && execution_plan.result == :pending
+          #elsif execution_plan.state == :paused && execution_plan.result == :pending
             # the execution plan was returned without reporting error
             # but marked as paused = the execution was paused due to
             # termination: retry on other executor
-            @world.execute()
+            # @world.execute()
           else
             respond(envelope, Done)
           end
@@ -45,8 +45,14 @@ module Dynflow
       end
 
       def perform_event(envelope, event_job)
-        # TODO: handle failure/result resolution
-        @world.executor.event(event_job.execution_plan_id, event_job.step_id, event_job.event)
+        future = Concurrent::IVar.new.with_observer do |_, _, reason|
+          if reason
+            respond(envelope, Failed[reason.message])
+          else
+            respond(envelope, Done)
+          end
+        end
+        @world.executor.event(event_job.execution_plan_id, event_job.step_id, event_job.event, future)
       end
 
       def allocate_executor(execution_plan_id)
