@@ -95,6 +95,65 @@ module Dynflow
         end
       end
 
+      def self.supports_world_invalidation
+
+        describe 'world invalidation' do
+          it 'removes the world from the register' do
+            client_world.invalidate(executor_world.registered_world)
+            worlds = client_world.persistence.find_worlds({})
+            refute_includes(worlds, executor_world.registered_world)
+          end
+
+          it 'schedules the plans to be run on different executor' do
+            triggered = client_world.trigger(Support::DummyExample::EventedAction)
+            executor = wait_for do
+              client_world.persistence.find_executor_for_plan(triggered.id)
+            end
+            first_executor = @executors.find { |e| e.id == executor.id }
+            simulate_executor_fail(first_executor)
+            second_executor = @executors.find { |e| e.id != executor.id }
+            client_world.invalidate(first_executor.registered_world)
+            executor = wait_for do
+              allocations_filters = { world_id: second_executor.id, execution_plan_id: triggered.id }
+              client_world.persistence.find_executor_allocations(filters: allocations_filters).first
+            end
+            client_world.event(triggered.id, 2, 'finish')
+            plan = triggered.finished.value
+            assert_equal :stopped, plan.state
+            assert_equal :success, plan.result
+            assert_equal plan.execution_history.map { |h| [h.name, h.world_id] },
+                [['start execution', first_executor.id],
+                 ['terminate execution', first_executor.id],
+                 ['start execution', second_executor.id],
+                 ['finish execution', second_executor.id]]
+          end
+
+          it 'when no executor is available, marks the plans as paused' do
+            triggered = client_world.trigger(Support::DummyExample::EventedAction)
+            executor = wait_for do
+              client_world.persistence.find_executor_for_plan(triggered.id)
+            end
+            first_executor = @executors.find { |e| e.id == executor.id }
+            simulate_executor_fail(first_executor)
+            second_executor = @executors.find { |e| e.id != executor.id }
+            second_executor.terminate.wait
+            client_world.invalidate(first_executor.registered_world)
+            plan = client_world.persistence.load_execution_plan(triggered.id)
+            assert_equal :paused, plan.state
+            assert_equal :pending, plan.result
+            assert_equal plan.execution_history.map { |h| [h.name, h.world_id] },
+                [['start execution', first_executor.id],
+                 ['terminate execution', first_executor.id]]
+          end
+
+          def simulate_executor_fail(world)
+            if Connectors::Direct === world.connector
+              world.connector.stop_listening(world)
+            end
+          end
+        end
+      end
+
       def self.supports_ping_pong
         describe 'ping/pong' do
           it 'succeeds when the world is available' do
@@ -129,6 +188,7 @@ module Dynflow
 
         dispatcher_works_with_this_connector
         supports_dynamic_retry
+        supports_world_invalidation
         supports_ping_pong
       end
 
@@ -150,6 +210,7 @@ module Dynflow
 
         dispatcher_works_with_this_connector
         supports_dynamic_retry
+        supports_world_invalidation
         supports_ping_pong
       end
     end

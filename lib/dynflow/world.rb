@@ -198,6 +198,22 @@ module Dynflow
       future
     end
 
+    # Invalidate another world, that left some data in the runtime,
+    # but it's not really running
+    def invalidate(world)
+      old_allocations = persistence.find_executor_allocations(filters: { world_id: world.id } )
+      persistence.delete_world(world)
+
+      old_allocations.each do |allocation|
+        plan = persistence.load_execution_plan(allocation.execution_plan_id)
+        plan.execution_history.add('terminate execution', world)
+        plan.update_state(:paused) unless plan.state == :paused
+        client_dispatcher << Dispatcher::RePublishJob[Dispatcher::Execution[allocation.execution_plan_id],
+                                                      allocation.client_world_id,
+                                                      allocation.request_id]
+      end
+    end
+
     # Detects execution plans that are marked as running but no executor
     # handles them (probably result of non-standard executor termination)
     #

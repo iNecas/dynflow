@@ -24,7 +24,7 @@ module Dynflow
 
       def perform_execution(envelope, execution)
         future = Concurrent::IVar.new.with_observer do |_, _, reason|
-          allocation = Persistence::ExecutorAllocation[@world.id, execution.execution_plan_id]
+          allocation = Persistence::ExecutorAllocation[@world.id, execution.execution_plan_id, envelope.sender_id, envelope.request_id]
           @world.persistence.delete_executor_allocation(allocation)
           if reason
             respond(envelope, Failed[reason.message])
@@ -40,7 +40,7 @@ module Dynflow
             end
           end
         end
-        allocate_executor(execution.execution_plan_id)
+        allocate_executor(execution.execution_plan_id, envelope.sender_id, envelope.request_id)
         @world.executor.execute(execution.execution_plan_id, future)
         respond(envelope, Accepted)
       rescue Dynflow::Error => e
@@ -58,8 +58,8 @@ module Dynflow
         @world.executor.event(event_job.execution_plan_id, event_job.step_id, event_job.event, future)
       end
 
-      def allocate_executor(execution_plan_id)
-        @world.persistence.save_executor_allocation(Persistence::ExecutorAllocation[@world.id, execution_plan_id])
+      def allocate_executor(execution_plan_id, client_world_id, request_id)
+        @world.persistence.save_executor_allocation(Persistence::ExecutorAllocation[@world.id, execution_plan_id, client_world_id, request_id])
       end
 
       def find_executor(execution_plan_id)
