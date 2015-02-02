@@ -154,7 +154,7 @@ module OrchestrateEvented
 
             | Execution plan #{execution_plan_id} got stuck
             | You can cancel the stucked step at
-            | http://localhost:4567/console#/execution_plans/#{execution_plan_id}
+            | http://localhost:4567/#{execution_plan_id}
 
         MSG
         # we suspend the action but don't plan the wakeup event,
