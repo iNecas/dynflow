@@ -169,7 +169,6 @@ module Dynflow
         @terminated ||= Concurrent::Promise.execute do
           # TODO: refactory once we can chain futures (probably after migrating
           #       to concurrent-ruby promises
-          persistence.delete_world(registered_world)
           logger.info "stop listening for new events..."
           listening_stopped     = connector.stop_listening(self)
           logger.info "start terminating client dispatcher..."
@@ -182,6 +181,9 @@ module Dynflow
             logger.info "start terminating executor dispatcher..."
             executor_dispatcher.ask(:terminate!).wait
           end
+
+          invalidate(self.registered_world)
+
           client_dispatcher_terminated = Concurrent::IVar.new
           client_dispatcher.ask(Dispatcher::StartTerminating[client_dispatcher_terminated])
           client_dispatcher_terminated.wait
