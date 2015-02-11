@@ -135,7 +135,7 @@ module Dynflow
       accepted = Concurrent::IVar.new.with_observer do |_, value, reason|
         done.fail reason if reason
       end
-      client_dispatcher.ask(Dispatcher::PublishJob[done, job, timeout], accepted)
+      client_dispatcher.ask([:publish_job, done, job, timeout], accepted)
       accepted.wait if wait_for_accepted
       done
     rescue => e
@@ -152,7 +152,7 @@ module Dynflow
                executor_dispatcher << envelope
              end),
             (on Dispatcher::Envelope.(message: Dispatcher::Response) do
-               client_dispatcher << envelope
+               client_dispatcher << [:dispatch_response, envelope]
              end))
     end
 
@@ -204,7 +204,7 @@ module Dynflow
       persistence.delete_world(world)
 
       old_allocations.each do |allocation|
-        client_dispatcher.ask(Dispatcher::InvalidateAllocation[allocation]).wait
+        client_dispatcher.ask([:invalidate_allocation, allocation]).wait
       end
     end
 

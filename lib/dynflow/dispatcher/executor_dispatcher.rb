@@ -25,7 +25,7 @@ module Dynflow
           allocation = Persistence::ExecutorAllocation[@world.id, execution.execution_plan_id, envelope.sender_id, envelope.request_id]
           @world.persistence.delete_executor_allocation(allocation)
           if plan && plan.state == :running
-            @world.client_dispatcher << InvalidateAllocation[allocation]
+            @world.client_dispatcher << [:invalidate_allocation, allocation]
           elsif reason
             respond(envelope, Failed[reason.message])
           else
