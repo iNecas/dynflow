@@ -32,11 +32,6 @@ module Dynflow
         @terminated   = nil
       end
 
-      def on_message(message)
-        target, *args = message
-        self.send(target, *args)
-      end
-
       def publish_job(future, job, timeout)
         track_job(future, job, timeout) do |tracked_job|
           dispatch_job(job, @world.id, tracked_job.id)
@@ -64,6 +59,8 @@ module Dynflow
         @tracked_jobs.clear
         finish_termination
       end
+
+      private
 
       def dispatch_job(job, client_world_id, request_id)
         executor_id = match job,

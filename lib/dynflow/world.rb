@@ -143,16 +143,17 @@ module Dynflow
     end
 
     def receive(envelope)
-      match(envelope,
-            (on Dispatcher::Envelope.(message: Dispatcher::Ping) do
+      Type! envelope, Dispatcher::Envelope
+      match(envelope.message,
+            (on Dispatcher::Ping do
                response_envelope = envelope.build_response_envelope(Dispatcher::Pong, self)
                connector.send(response_envelope)
              end),
-            (on Dispatcher::Envelope.(message: Dispatcher::Request) do
-               executor_dispatcher << envelope
+            (on Dispatcher::Request do
+               executor_dispatcher.tell([:handle_request, envelope])
              end),
-            (on Dispatcher::Envelope.(message: Dispatcher::Response) do
-               client_dispatcher << [:dispatch_response, envelope]
+            (on Dispatcher::Response do
+               client_dispatcher.tell([:dispatch_response, envelope])
              end))
     end
 
@@ -178,7 +179,7 @@ module Dynflow
 
           logger.info "start terminating client dispatcher..."
           client_dispatcher_terminated = Concurrent::IVar.new
-          client_dispatcher.ask(Actor::StartTermination[client_dispatcher_terminated])
+          client_dispatcher.ask([:start_termination, client_dispatcher_terminated])
           client_dispatcher_terminated.wait
 
           if @clock
