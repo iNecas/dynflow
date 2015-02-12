@@ -25,12 +25,18 @@ Gem::Specification.new do |s|
   s.add_dependency "algebrick", '~> 0.5.0'
   s.add_dependency "concurrent-ruby", '~> 0.8.0'
 
+  if defined?(JRUBY_VERSION)
+    s.platform = 'java'
+    s.add_development_dependency "jdbc-sqlite3"
+  else
+    s.add_development_dependency "sqlite3"
+    s.add_development_dependency "pg"
+  end
+
   s.add_development_dependency "rack-test"
   s.add_development_dependency "minitest"
   s.add_development_dependency "minitest-reporters"
   s.add_development_dependency "activerecord"
   s.add_development_dependency "sequel"
-  s.add_development_dependency "sqlite3"
-  s.add_development_dependency "pg"
   s.add_development_dependency "sinatra"
 end

@@ -21,7 +21,7 @@ class ExampleHelper
     end
 
     def persistence_conn_string
-      ENV['DB_CONN_STRING'] || 'sqlite:/'
+      ENV['DB_CONN_STRING'] || 'jdbc:sqlite:db.sqlite3'
     end
 
     def persistence_adapter
