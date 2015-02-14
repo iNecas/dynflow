@@ -6,11 +6,19 @@ module Dynflow
 
     attr_reader :id, :client_dispatcher, :executor_dispatcher, :executor, :connector,
         :persistence, :transaction_adapter, :action_classes, :subscription_index, :logger_adapter,
-        :middleware, :auto_rescue, :clock
+        :middleware, :auto_rescue, :clock,
+        :operational_pool, :task_pool
 
     def initialize(config)
       @id                  = SecureRandom.uuid
-      @clock               = Clock.spawn('clock')
+
+      @operational_pool    = Concurrent::ThreadPoolExecutor.new(min_threads: 0,
+                                                                max_threads: 5,
+                                                                max_queue: 0)
+
+      @clock               = Concurrent::Actor.spawn(name:     'clock',
+                                                     class:    Clock,
+                                                     executor: operational_pool)
       config_for_world     = Config::ForWorld.new(config, self)
       config_for_world.validate
       @logger_adapter      = config_for_world.logger_adapter
