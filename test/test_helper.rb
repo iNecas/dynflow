@@ -16,6 +16,20 @@ require 'dynflow'
 require 'dynflow/testing'
 require 'pry'
 
+module ResetConcurrentRuby
+  def before_setup
+    Concurrent.instance_variable_get(:@configuration).value = Concurrent::Configuration.new
+    new_root = Concurrent::Delay.new do
+      Concurrent::Actor::Core.new(parent: nil, name: '/', class: Concurrent::Actor::Root, initialized: ivar = Concurrent::IVar.new).reference.tap { ivar.no_error! }
+    end
+    Concurrent::Actor.instance_variable_set('@root', new_root)
+  end
+end
+
+class MiniTest::Test
+  include ResetConcurrentRuby
+end
+
 require 'support/code_workflow_example'
 require 'support/middleware_example'
 require 'support/rescue_example'
