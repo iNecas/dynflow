@@ -86,10 +86,10 @@ module WorldInstance
   #   the worlrs register there every run to avoid collisions
   def self.persistence_adapter(isolated = true)
     db_config = if isolated
-                  db_config = ENV['DB_CONN_STRING'] || 'jdbc:sqlite:db.sqlite3'
+                  db_config = ENV['DB_CONN_STRING'] || "jdbc:sqlite:db.sqlite3"
                   @isolated_adapter ||= Dynflow::PersistenceAdapters::Sequel.new(db_config)
                 else
-                  Dynflow::PersistenceAdapters::Sequel.new('jdbc:sqlite:db.sqlite3')
+                  Dynflow::PersistenceAdapters::Sequel.new("jdbc:sqlite:db.#{SecureRandom.uuid.to_s}sqlite3")
                 end
   end
 
