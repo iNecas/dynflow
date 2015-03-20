@@ -239,30 +239,63 @@ future_tests = -> do
   ivar_creations  = {}
   non_ready_ivars = {}
 
+  class Concurrent::IVar
+    attr_accessor :caused_by, :backtrace
+  end
+
   Concurrent::IVar.singleton_class.send :define_method, :new do |*args, &block|
     super(*args, &block).tap do |ivar|
-      ivar_creations[ivar.object_id]  = caller(3)
+      ivar.caused_by = Thread.current[:concurrent_ruby_current_envelope]
+      ivar.backtrace = caller(3)
+    end
+  end
+
+  class Concurrent::Actor::Envelope
+    attr_accessor :backtrace, :caused_by
+  end
+
+  Concurrent::Actor::Envelope.singleton_class.send :define_method, :new do |*args, &block|
+    super(*args, &block).tap do |envelope|
+      envelope.caused_by = Thread.current[:concurrent_ruby_current_envelope]
+      envelope.backtrace  = caller(3)
     end
   end
 
   MiniTest.after_run do
-    non_ready_ivars = ObjectSpace.each_object(Concurrent::IVar).map do |ivar|
+    non_ready_ivars = ObjectSpace.each_object(Concurrent::IVar).to_a.delete_if do |ivar|
       ivar.wait(1)
-      unless ivar.completed?
-        ivar.object_id
+      ivar.completed?
+    end
+
+    describe_causes = ->(object) do
+      message = ""
+      if object.caused_by
+        message += "    caused by #{object.caused_by}"
+        if object.is_a? Concurrent::Actor::Envelope
+          message += " #{object.message}"
+        end
+        message += "\n"
+        message += "      #{object.caused_by.backtrace.join("\n      ")}\n" if object.caused_by.backtrace
+        message += describe_causes.call(object.caused_by)
       end
-    end.compact
+      message
+    end
 
     unless non_ready_ivars.empty?
-      unified = non_ready_ivars.each_with_object({}) do |(id, _), h|
-        backtrace_first    = ivar_creations[id][0]
+      unified = non_ready_ivars.each_with_object({}) do |ivar, h|
+        backtrace_first    = ivar.backtrace.first
         h[backtrace_first] ||= []
-        h[backtrace_first] << id
+        h[backtrace_first] << ivar
       end
-      raise("there were #{non_ready_ivars.size} non_ready_futures:\n" +
-                unified.map do |backtrace, ids|
-                  "--- #{ids.size}: #{ids}\n#{ivar_creations[ids.first].join("\n")}"
-                end.join("\n"))
+      messages = unified.map do |_, ivars|
+        ivar = ivars.first
+        message = "--- #{ivars.size}: #{ivars.map(&:object_id)}\n"
+        message += "      #{ivar.backtrace.join("\n      ")}\n"
+        message += describe_causes.call(ivar)
+        message
+      end
+
+      raise("there were #{non_ready_ivars.size} non_ready_ivars:\n" + messages.join("\n"))
     end
   end
 

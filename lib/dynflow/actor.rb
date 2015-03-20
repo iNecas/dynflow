@@ -28,6 +28,16 @@ module Dynflow
       end
     end
 
+    class TrackCausedBy < Concurrent::Actor::Behaviour::Abstract
+      def on_envelope(envelope)
+        original_value = Thread.current[:concurrent_ruby_current_envelope]
+        Thread.current[:concurrent_ruby_current_envelope] = envelope
+        pass envelope
+      ensure
+        Thread.current[:concurrent_ruby_current_envelope] = original_value
+      end
+    end
+
     include Algebrick::Matching
 
     def start_termination(ivar)
@@ -44,7 +54,8 @@ module Dynflow
     end
 
     def behaviour_definition
-      [*Concurrent::Actor::Behaviour.base,
+      [[TrackCausedBy, []],
+       *Concurrent::Actor::Behaviour.base,
        [Concurrent::Actor::Behaviour::Buffer, []],
        [Concurrent::Actor::Behaviour::SetResults, [:just_log]],
        [Concurrent::Actor::Behaviour::Awaits, []],
