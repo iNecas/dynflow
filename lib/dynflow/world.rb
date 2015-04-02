@@ -78,7 +78,7 @@ module Dynflow
       PlaningFailed   = type { fields! execution_plan_id: String, error: Exception }
       # Returned by #trigger when planning is successful, #future will resolve after
       # ExecutionPlan is executed.
-      Triggered       = type { fields! execution_plan_id: String, future: Concurrent::IVar }
+      Triggered       = type { fields! execution_plan_id: String, future: Concurrent::Obligation }
 
       variants PlaningFailed, Triggered
     end
@@ -116,7 +116,7 @@ module Dynflow
       planned        = execution_plan.state == :planned
 
       if planned
-        done = execute(execution_plan.id, Concurrent::IVar.new)
+        done = execute(execution_plan.id, Concurrent::Promise.new)
         Triggered[execution_plan.id, done]
       else
         PlaningFailed[execution_plan.id, execution_plan.errors.first.exception]

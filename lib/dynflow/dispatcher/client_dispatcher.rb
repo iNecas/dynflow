@@ -3,7 +3,7 @@ module Dynflow
     class ClientDispatcher < Abstract
 
       TrackedRequest = Algebrick.type do
-        fields! id: Integer, request: Request, accepted: Concurrent::IVar, finished: Concurrent::IVar
+        fields! id: Integer, request: Request, accepted: Concurrent::IVar, finished: Concurrent::Obligation
       end
 
       module TrackedRequest
