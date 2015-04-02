@@ -230,27 +230,34 @@ class MiniTest::Test
 end
 
 Concurrent.configuration.auto_terminate = false
+if Concurrent.respond_to? :disable_auto_termination_of_all_executors!
+  Concurrent.disable_auto_termination_of_all_executors!
+  Concurrent.disable_auto_termination_of_global_executors!
+end
+
 MiniTest.after_run do
-  Concurrent.finalize_global_executors
+  # Concurrent.finalize_global_executors FIXME
 end
 
 # ensure there are no unresolved IVars at the end or being GCed
 future_tests = -> do
   ivar_creations  = {}
-  non_ready_ivars = {}
+  tracked_classes = [Concurrent::IVar, Concurrent::Promise]
 
-  Concurrent::IVar.singleton_class.send :define_method, :new do |*args, &block|
-    super(*args, &block).tap do |ivar|
-      ivar_creations[ivar.object_id]  = caller(3)
+  tracked_classes.each do |klass|
+    klass.singleton_class.send :define_method, :new do |*args, &block|
+      super(*args, &block).tap do |ivar|
+        ivar_creations[ivar.object_id] = caller(3)
+      end
     end
-  end
 
-  original_method = Concurrent::IVar.instance_method :complete
-  Concurrent::IVar.send :define_method, :complete do |*args|
-    begin
-      original_method.bind(self).call *args
-    ensure
-      ivar_creations.delete(self.object_id)
+    original_method = klass.instance_method :complete
+    klass.send :define_method, :complete do |*args|
+      begin
+        original_method.bind(self).call *args
+      ensure
+        ivar_creations.delete(self.object_id)
+      end
     end
   end
 
