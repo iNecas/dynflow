@@ -1,8 +1,13 @@
+require 'dynflow/action/timeouts'
+
 module Dynflow
   module Action::Polling
 
+    def self.included(base)
+      base.send :include, ::Dynflow::Action::Timeouts
+    end
+
     Poll = Algebrick.atom
-    Timeout = Algebrick.atom
 
     def run(event = nil)
       case event
@@ -35,15 +40,7 @@ module Dynflow
       raise NotImplementedError
     end
 
-    def process_timeout
-      fail("Timeout exceeded.")
-    end
-
     def on_finish
-    end
-
-    def schedule_timeout(seconds)
-      world.clock.ping suspended_action, seconds, Timeout
     end
 
     # External task data. It should return nil when the task has not
