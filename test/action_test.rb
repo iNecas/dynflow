@@ -174,7 +174,7 @@ module Dynflow
 
       class NonRunningExternalService < ExternalService
         def poll(id)
-          return @current_state
+          return { message: 'nothing changed' }
         end
       end
 
@@ -191,8 +191,8 @@ module Dynflow
         end
 
         def invoke_external_task
+          schedule_timeout(5)
           super
-          schedule_timeout(1)
         end
       end
 
@@ -288,15 +288,20 @@ module Dynflow
 
         before do
           TestTimeoutAction.config = TestTimeoutAction::Config.new
+          TestTimeoutAction.config.poll_intervals = [2]
         end
 
         it 'timesout' do
           action   = run_action plan
-          ENV['debug'] = 't'
-
-          binding.pry
-          progress_action_time action
-          assert true
+          iterations = 0
+          while progress_action_time action
+            # we count the number of iterations till the timeout occurs
+            iterations += 1
+          end
+          action.state.must_equal :error
+          # two polls in 2 seconds intervals untill the 5 seconds
+          # timeout appears
+          iterations.must_equal 3
         end
       end
     end
