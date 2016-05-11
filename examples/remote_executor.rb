@@ -71,12 +71,8 @@ class RemoteExecutorExample
         config.connector           = connector
       end
 
-      world.trigger(OrchestrateEvented::CreateInfrastructure)
-      world.trigger(OrchestrateEvented::CreateInfrastructure, true)
-
-      loop do
-        world.trigger(SampleAction).finished.wait
-        sleep 0.5
+      10.times do
+        world.trigger(OrchestrateEvented::CreateInfrastructure, ARGV.last)
       end
     end
 

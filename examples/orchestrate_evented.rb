@@ -26,24 +26,26 @@ module OrchestrateEvented
 
   class CreateInfrastructure < Dynflow::Action
 
-    def plan(get_stuck = false)
-      sequence do
-        concurrence do
-          plan_action(CreateMachine, 'host1', 'db', get_stuck: get_stuck)
-          plan_action(CreateMachine, 'host2', 'storage')
+    def plan(count)
+      10.times do
+        sequence do
+          data = 500.times.inject({}) { |h,i| h.update(i => "*"*i)}
+          plan_action(CreateVM, data)
+          plan_action(CreateVM, data)
         end
-        plan_action(CreateMachine,
-                    'host3',
-                    'web_server',
-                    :db_machine => 'host1',
-                    :storage_machine => 'host2')
       end
+      plan_self(:count => count)
+    end
+
+    def finalize
+      #STDOUT.puts "===== #{input[:count]}"
+      #STDOUT.flush
     end
   end
 
   class CreateMachine < Dynflow::Action
 
-    def plan(name, profile, config_options = {})
+    def plan(name, profile, config_potions = {})
       prepare_disk = plan_action(PrepareDisk, 'name' => name)
       create_vm    = plan_action(CreateVM,
                                  :name => name,
@@ -74,7 +76,7 @@ module OrchestrateEvented
                # do nothing
              end),
             (on nil do
-               suspend { |suspended_action| world.clock.ping suspended_action, rand(1), Finished }
+               suspend { |suspended_action| world.clock.ping suspended_action, 0.2, Finished }
              end))
     end
 
@@ -168,8 +170,17 @@ module OrchestrateEvented
 end
 
 if $0 == __FILE__
-  ExampleHelper.world.trigger(OrchestrateEvented::CreateInfrastructure)
-  ExampleHelper.world.trigger(OrchestrateEvented::CreateInfrastructure, true)
+  10.times do |i|
+    puts "triggering #{i}"
+    q = Queue.new
+    Thread.new do 
+      q.push ExampleHelper.world.trigger(OrchestrateEvented::CreateInfrastructure, i)
+    end
+    sleep 1
+    until q.empty?
+      q.pop.wait
+    end
+  end
   puts example_description
   ExampleHelper.run_web_console
 end
