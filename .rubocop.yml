@@ -28,5 +28,8 @@ Style/SymbolProc:
 Style/MultilineOperationIndentation:
   Enabled: true
 
+# Cop supports --auto-correct.
+Style/EmptyLines:
+  Enabled: true
 
 
