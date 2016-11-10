@@ -111,9 +111,7 @@ module Dynflow
       unless @execution_plan_managers.empty?
         logger.error "... cleaning #{@execution_plan_managers.size} execution plans ..."
         begin
-          @execution_plan_managers.values.each do |manager|
-            manager.terminate
-          end
+          @execution_plan_managers.values.each(&:terminate)
         rescue Errors::PersistenceError
           logger.error "could not to clean the data properly"
         end

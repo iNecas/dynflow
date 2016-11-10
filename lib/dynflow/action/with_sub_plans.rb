@@ -131,7 +131,7 @@ module Dynflow
     end
 
     def resume
-      if sub_plans.all? { |sub_plan| sub_plan.error_in_plan? }
+      if sub_plans.all?(&:error_in_plan?)
         initiate
       else
         recalculate_counts

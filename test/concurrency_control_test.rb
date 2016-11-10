@@ -107,7 +107,7 @@ module Dynflow
           def release(*args)
             # Discard semaphores without tickets, find the one with least tickets from the rest
             if @semaphores.key? args.first
-              tickets = @semaphores[args.first].children.values.map { |sem| sem.tickets }.compact.min
+              tickets = @semaphores[args.first].children.values.map(&:tickets).compact.min
               # Add running count to the log
               @running << (tickets - @semaphores[args.first].free) unless tickets.nil?
             end

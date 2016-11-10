@@ -79,9 +79,7 @@ module Dynflow
       def add_todo(flow)
         case flow
         when Flows::Sequence
-          @todo << SequenceCursor.new(@flow_manager, flow, self).tap do |cursor|
-            cursor.move
-          end
+          @todo << SequenceCursor.new(@flow_manager, flow, self).tap(&:move)
         when Flows::Concurrence
           flow.sub_flows.each { |sub_flow| add_todo(sub_flow) }
         when Flows::Atom

@@ -118,7 +118,7 @@ module Jekyll
 
     def tags(obj)
       tags = obj['tags'].dup
-      tags.map! { |t| t.first } if tags.first.is_a?(Array)
+      tags.map!(&:first) if tags.first.is_a?(Array)
       tags.map! { |t| tag_link(t, tag_url(t), rel: 'tag', class: 'label label-default') if t.is_a?(String) }.compact!
       tags.join(' ')
     end

@@ -425,7 +425,7 @@ module PlanAssertions
   end
 
   def dedent(string)
-    dedent = string.scan(/^ */).map { |spaces| spaces.size }.min
+    dedent = string.scan(/^ */).map(&:size).min
     string.lines.map { |line| line[dedent..-1] }.join
   end
 end

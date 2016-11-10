@@ -389,7 +389,7 @@ module Dynflow
         Array(klass.subscribe).each do |subscribed_class|
           index[Utils.constantize(subscribed_class.to_s)] << klass
         end
-      end.tap { |o| o.freeze }
+      end.tap(&:freeze)
     end
 
     def run_before_termination_hooks
