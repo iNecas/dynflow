@@ -22,3 +22,11 @@ Style/AlignParameters:
 Style/SymbolProc:
   Enabled: true
 
+# Cop supports --auto-correct.
+# Configuration parameters: EnforcedStyle, SupportedStyles, IndentationWidth.
+# SupportedStyles: aligned, indented
+Style/MultilineOperationIndentation:
+  Enabled: true
+
+
+
