@@ -215,8 +215,46 @@ module Dynflow
     end
 
     def terminate(future = Concurrent.future)
+      start_termination.tangle(future)
+      future
+    end
+
+    def terminating?
+      defined?(@terminating)
+    end
+
+    # executes plans that are planned/paused and haven't reported any error yet (usually when no executor
+    # was available by the time of planning or terminating)
+    def auto_execute
+      coordinator.acquire(Coordinator::AutoExecuteLock.new(self)) do
+        planned_execution_plans =
+            self.persistence.find_execution_plans filters: { 'state' => %w(planned paused), 'result' => (ExecutionPlan.results - [:error]).map(&:to_s) }
+        planned_execution_plans.map do |ep|
+          if coordinator.find_locks(Dynflow::Coordinator::ExecutionLock.unique_filter(ep.id)).empty?
+            execute(ep.id)
+          end
+        end.compact
+      end
+    rescue Coordinator::LockError => e
+      logger.info "auto-executor lock already aquired: #{e.message}"
+      []
+    end
+
+    def try_spawn(config_for_world, what, lock_class = nil)
+      object = nil
+      return nil if !executor || (object = config_for_world.public_send(what)).nil?
+
+      coordinator.acquire(lock_class.new(self)) if lock_class
+      object.spawn.wait
+      object
+    rescue Coordinator::LockError => e
+      nil
+    end
+
+    def start_termination
       @termination_barrier.synchronize do
-        @terminating ||= Concurrent.future do
+        return @terminating if @terminating
+        termination_future ||= Concurrent.future do
           begin
             run_before_termination_hooks
 
@@ -229,7 +267,7 @@ module Dynflow
             throttle_limiter.terminate.wait(termination_timeout)
 
             if executor
-              connector.stop_receiving_new_work(self)
+              connector.stop_receiving_new_work(self, termination_timeout)
 
               logger.info "start terminating executor..."
               executor.terminate.wait(termination_timeout)
@@ -246,7 +284,7 @@ module Dynflow
             client_dispatcher_terminated.wait(termination_timeout)
 
             logger.info "stop listening for new events..."
-            connector.stop_listening(self)
+            connector.stop_listening(self, termination_timeout)
 
             if @clock
               logger.info "start terminating clock..."
@@ -259,17 +297,13 @@ module Dynflow
           rescue => e
             logger.fatal(e)
           end
+        end
+        @terminating = Concurrent.future do
+          termination_future.wait(termination_timeout)
         end.on_completion do
           Thread.new { Kernel.exit } if @exit_on_terminate.true?
         end
       end
-
-      @terminating.tangle(future)
-      future
-    end
-
-    def terminating?
-      defined?(@terminating)
     end
 
     # Invalidate another world, that left some data in the runtime,
@@ -382,35 +416,8 @@ module Dynflow
       return orphaned_locks
     end
 
-    # executes plans that are planned/paused and haven't reported any error yet (usually when no executor
-    # was available by the time of planning or terminating)
-    def auto_execute
-      coordinator.acquire(Coordinator::AutoExecuteLock.new(self)) do
-        planned_execution_plans =
-            self.persistence.find_execution_plans filters: { 'state' => %w(planned paused), 'result' => (ExecutionPlan.results - [:error]).map(&:to_s) }
-        planned_execution_plans.map do |ep|
-          if coordinator.find_locks(Dynflow::Coordinator::ExecutionLock.unique_filter(ep.id)).empty?
-            execute(ep.id)
-          end
-        end.compact
-      end
-    rescue Coordinator::LockError => e
-      logger.info "auto-executor lock already aquired: #{e.message}"
-      []
-    end
-
-    def try_spawn(config_for_world, what, lock_class = nil)
-      object = nil
-      return nil if !executor || (object = config_for_world.public_send(what)).nil?
-
-      coordinator.acquire(lock_class.new(self)) if lock_class
-      object.spawn.wait
-      object
-    rescue Coordinator::LockError => e
-      nil
-    end
-
     private
+
     def calculate_subscription_index
       @subscription_index =
           action_classes.each_with_object(Hash.new { |h, k| h[k] = [] }) do |klass, index|
@@ -423,11 +430,14 @@ module Dynflow
 
     def run_before_termination_hooks
       until @before_termination_hooks.empty?
-        begin
-          @before_termination_hooks.pop.call
-        rescue => e
-          logger.error e
+        hook_run = Concurrent.future do
+          begin
+            @before_termination_hooks.pop.call
+          rescue => e
+            logger.error e
+          end
         end
+        logger.error "timeout running before_termination_hook" unless hook_run.wait(termination_timeout)
       end
     end
 
