@@ -12,7 +12,7 @@ module Dynflow
         rescue Errors::PersistenceError => e
           @pool.tell([:handle_persistence_error, e])
         ensure
-          @pool.tell([:worker_done, reference, work_item])
+          @pool.tell([:worker_done, reference, work_item]) if Concurrent.global_io_executor.running?
           @transaction_adapter.cleanup
         end
       end
