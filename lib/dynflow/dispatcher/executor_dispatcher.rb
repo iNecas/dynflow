@@ -57,7 +57,7 @@ module Dynflow
         #     respond(envelope, Failed[reason.to_s])
         #   end
         # end
-        @world.executor.event(event_request.execution_plan_id, event_request.step_id, event_request.event)
+        @world.executor.event(envelope.request_id, event_request.execution_plan_id, event_request.step_id, event_request.event)
       rescue Dynflow::Error => e
         # TODO AJ: log the error
         # TODO AJ: DEAD

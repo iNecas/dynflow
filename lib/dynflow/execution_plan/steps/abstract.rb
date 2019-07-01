@@ -45,6 +45,11 @@ module Dynflow
 
         @action_id = action_id || raise(ArgumentError, 'missing action_id')
       end
+
+      def ==(other)
+        other.class == self.class && other.execution_plan_id == self.execution_plan_id && other.id == self.id
+      end
+
       # rubocop:enable Metrics/ParameterLists
 
       def action_logger
@@ -157,12 +162,12 @@ module Dynflow
       private
 
       def with_meta_calculation(action, &block)
-        start       = Time.now
+        start       = Time.now.utc
         @started_at ||= start
         block.call
       ensure
         calculate_progress(action)
-        @ended_at = Time.now
+        @ended_at = Time.now.utc
         current_execution_time = @ended_at - start
         @execution_time += current_execution_time
         @real_time       = @ended_at - @started_at

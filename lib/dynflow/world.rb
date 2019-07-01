@@ -63,7 +63,9 @@ module Dynflow
         end
       end
       post_initialization
-      if connector.is_a?(Connectors::ActiveJob) && executor
+      # TODO AJ: figure out the right condition and variable to set it to
+      if [:executor, :orchestrator, :worker].include? config.role
+      #if connector.is_a?(Connectors::ActiveJob) && executor
         ::Dynflow.orchestrator = self
       end
     end
@@ -217,8 +219,10 @@ module Dynflow
       publish_request(Dispatcher::Execution[execution_plan_id], done, false)
     end
 
-    def event(execution_plan_id, step_id, event, done = Concurrent::Promises.resolvable_future)
-      publish_request(Dispatcher::Event[execution_plan_id, step_id, event], done, false)
+    # set done_future to Concurrent::Promises.resolvable_future if the desire is to wait for
+    # the event to be processed, the future will be returned from the method
+    def event(execution_plan_id, step_id, event, done_future = nil)
+      publish_request(Dispatcher::Event[execution_plan_id, step_id, event], done_future, false)
     end
 
     def ping(world_id, timeout, done = Concurrent::Promises.resolvable_future)
@@ -234,15 +238,16 @@ module Dynflow
     end
 
     def publish_request(request, done, wait_for_accepted, timeout = nil)
-      accepted = Concurrent::Promises.resolvable_future
-      accepted.rescue do |reason|
-        done.reject reason if reason
-      end
+      # accepted = Concurrent::Promises.resolvable_future
+      # accepted.rescue do |reason|
+      #   done.reject reason if done && reason
+      # end
+      puts "===== publish request #{request}"
       client_dispatcher.tell([:publish_request, done, request, timeout])
       # TODO AJ: drop waiting for accepted - we will just assume it happened or an exception would be raised
       # if there is communication issue - if anyone would need to wait for the results, there should be polling
       # mechanism to learn about the status.
-      accepted.fulfill(true)
+      # accepted.fulfill(true)
       if wait_for_accepted
         raise "wait_for_accepted will be removed for simplification"
         # accepted.wait if wait_for_accepted
@@ -251,8 +256,7 @@ module Dynflow
       # probably a custom class implementing `wait` method - the advantage is there would be
       # no additional code needed tjo be handled on client side in case the client doesn't wait for it.
       done
-    rescue => e
-      accepted.reject e
+      # accepted.reject e
     end
 
     def terminate(future = Concurrent::Promises.resolvable_future)

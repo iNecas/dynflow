@@ -1,14 +1,6 @@
 module Dynflow
   module Executors
     module ActiveJob
-      class PerformWork < ::ActiveJob::Base
-        queue_as :dynflow_worker
-
-        def perform(message)
-          puts "hello"
-        end
-      end
-
       # handles execution request: this might be either new execution plan
       # or some event to handle on orchestrator side
       class ProcessRequest < ::ActiveJob::Base

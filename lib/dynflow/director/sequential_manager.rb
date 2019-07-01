@@ -37,6 +37,10 @@ module Dynflow
         end
       end
 
+      def done!
+        @done = true
+      end
+
       def done?
         @done
       end

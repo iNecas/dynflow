@@ -45,6 +45,7 @@ module Dynflow
   class Error < StandardError
   end
 
+  require 'dynflow/active_job'
   require 'dynflow/utils'
   require 'dynflow/round_robin'
   require 'dynflow/dead_letter_silencer'
@@ -76,6 +77,7 @@ module Dynflow
   require 'dynflow/throttle_limiter'
   require 'dynflow/telemetry'
   require 'dynflow/config'
+
 
   if defined? Rails
     require 'dynflow/active_job/queue_adapter'

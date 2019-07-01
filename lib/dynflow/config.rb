@@ -4,8 +4,11 @@ module Dynflow
   class Config
     include Algebrick::TypeCheck
 
-    def self.config_attr(name, *types, &default)
+    def self.config_attr(name, *types_or_values, &default)
       self.send(:define_method, "validate_#{ name }!") do |value|
+        return if types_or_values.empty?
+        types, values = types_or_values.partition { |v| [Class, Module].include?(v.class) }
+        return if values.include?(value)
         Type! value, *types unless types.empty?
       end
       self.send(:define_method, name) do
@@ -99,6 +102,10 @@ module Dynflow
 
     config_attr :executor, Executors::Parallel, FalseClass do |world, config|
       Executors::Parallel.new(world, config.executor_heartbeat_interval, config.queues)
+    end
+
+    config_attr :role, :client, :executor, :orchestrator, :worker do
+      :client
     end
 
     config_attr :executor_semaphore, Semaphores::Abstract, FalseClass do |world, config|

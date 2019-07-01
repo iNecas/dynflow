@@ -10,15 +10,16 @@ module Dynflow
     include Algebrick::TypeCheck
 
     Event = Algebrick.type do
-      fields! execution_plan_id: String,
+      fields! request_id:        String,
+              execution_plan_id: String,
               step_id:           Integer,
               event:             Object,
-              result:            Concurrent::Promises::ResolvableFuture
+              result:            type { variants NilClass, Concurrent::Promises::ResolvableFuture }
     end
 
     UnprocessableEvent = Class.new(Dynflow::Error)
 
-    class WorkItem
+    class WorkItem < Serializable
       attr_reader :execution_plan_id, :queue
 
       def initialize(execution_plan_id, queue)
@@ -28,6 +29,16 @@ module Dynflow
 
       def execute
         raise NotImplementedError
+      end
+
+      def to_hash
+        { class: self.class.name,
+          execution_plan_id: execution_plan_id,
+          queue: queue }
+      end
+
+      def self.new_from_hash(hash, *_args)
+        self.new(hash[:execution_plan_id], hash[:queue])
       end
     end
 
@@ -42,33 +53,53 @@ module Dynflow
       def execute
         @step.execute(nil)
       end
+
+      def to_hash
+        super.merge(step: step.to_hash)
+      end
+
+      def self.new_from_hash(hash, *_args)
+        self.new(hash[:execution_plan_id],
+                 Serializable.from_hash(hash[:step], hash[:execution_plan_id], Dynflow.orchestrator),
+                 hash[:queue])
+      end
     end
 
     class EventWorkItem < StepWorkItem
-      attr_reader :event
+      attr_reader :event, :request_id
 
-      def initialize(execution_plan_id, step, event, queue)
+      def initialize(request_id, execution_plan_id, step, event, queue)
         super(execution_plan_id, step, queue)
         @event = event
+        @request_id = request_id
       end
 
       def execute
-        @step.execute(@event.event)
+        @step.execute(@event)
+      end
+
+      def to_hash
+        super.merge(request_id: @request_id, event: Dynflow.serializer.dump(@event))
+      end
+
+      def self.new_from_hash(hash, *_args)
+        self.new(hash[:request_id],
+                 hash[:execution_plan_id],
+                 Serializable.from_hash(hash[:step], hash[:execution_plan_id], Dynflow.orchestrator),
+                 Dynflow.serializer.load(hash[:event]),
+                 hash[:queue])
       end
     end
 
     class FinalizeWorkItem < WorkItem
-      def initialize(execution_plan_id, sequential_manager, queue)
-        super(execution_plan_id, queue)
-        @sequential_manager = sequential_manager
-      end
-
       def execute
-        @sequential_manager.finalize
+        execution_plan = Dynflow.orchestrator.persistence.load_execution_plan(execution_plan_id)
+        manager = Director::SequentialManager.new(Dynflow.orchestrator, execution_plan)
+        manager.finalize
       end
     end
 
-    require 'dynflow/director/work_queue'
+    require 'dynflow/director/queue_hash'
     require 'dynflow/director/sequence_cursor'
     require 'dynflow/director/flow_manager'
     require 'dynflow/director/execution_plan_manager'
@@ -109,6 +140,7 @@ module Dynflow
 
     def work_finished(work)
       manager = @execution_plan_managers[work.execution_plan_id]
+      return [] unless manager # skip case when getting event from execution plan that is not running anymore
       unless_done(manager, manager.what_is_next(work))
     end
 

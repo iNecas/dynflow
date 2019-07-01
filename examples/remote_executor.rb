@@ -55,6 +55,16 @@ class RemoteExecutorExample
       world = ExampleHelper.create_world do |config|
         config.persistence_adapter = persistence_adapter
         config.connector           = connector
+        config.role = :orchestrator
+      end
+    end
+
+    def initialize_worker
+      world = ExampleHelper.create_world do |config|
+        config.persistence_adapter = persistence_adapter
+        config.connector           = connector
+        config.executor            = false
+        config.role = :worker
       end
     end
 
@@ -118,9 +128,13 @@ MSG
     exit 1
   end
 else
+  Sidekiq.default_worker_options = { :retry => 0, 'backtrace' => true }
   # assuming the remote executor was required as part of initialization
   # of the ActiveJob worker
   if Sidekiq.options[:queues].include?("dynflow_orchestrator")
     RemoteExecutorExample.initialize_orchestrator
+  end
+  unless (Sidekiq.options[:queues] - ['dynflow_orchestrator']).empty?
+    RemoteExecutorExample.initialize_worker
   end
 end
